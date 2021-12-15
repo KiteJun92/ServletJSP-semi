@@ -132,3 +132,254 @@ COMMENT ON COLUMN "REPLY"."REPLY_CREATE_DT" IS '댓글 작성일';
 COMMENT ON COLUMN "REPLY"."BOARD_NO" IS '게시글 번호';
 COMMENT ON COLUMN "REPLY"."MEMBER_NO" IS '회원 번호';
 COMMENT ON COLUMN "REPLY"."REPLY_STATUS_CD" IS '댓글 상태 코드';
+
+
+-- 시퀀스 생성
+CREATE SEQUENCE SEQ_MEMBER_NO; -- 회원 번호 시퀀스
+CREATE SEQUENCE SEQ_BOARD_NO; -- 게시글 번호 시퀀스
+CREATE SEQUENCE SEQ_REPLY_NO; -- 댓글 번호 시퀀스
+
+
+--------------------------------------------------------------------------------
+-- 샘플 데이터 --
+
+-- 회원 상태 테이블
+INSERT INTO MEMBER_STATUS VALUES(100, '정상');
+INSERT INTO MEMBER_STATUS VALUES(101, '탈퇴');
+INSERT INTO MEMBER_STATUS VALUES(102, '정지');
+
+SELECT * FROM MEMBER_STATUS;
+COMMIT;
+
+-- 회원 등급 테이블
+INSERT INTO MEMBER_GRADE VALUES(200, '일반회원');
+INSERT INTO MEMBER_GRADE VALUES(201, '관리자');
+
+SELECT * FROM MEMBER_GRADE;
+COMMIT;
+
+
+-- 회원 테이블
+
+INSERT INTO MEMBER
+VALUES(SEQ_MEMBER_NO.NEXTVAL, 'user01', 'pass01!', '유저일',
+       '010-1234-1234', 'user01@kh.or.kr', 
+       '서울시 중구 남대문로 120 대일빌딩 2층 KH정보교육원',
+       DEFAULT, 100, 200);
+
+COMMIT;
+
+-- 로그인 SQL
+-- 탈퇴회원 제외
+SELECT MEMBER_NO, MEMBER_NM, MEMBER_PHONE, MEMBER_EMAIL, MEMBER_ADDR,
+       ENROLL_DT, STATUS_CD, GRADE_CD
+FROM MEMBER
+WHERE MEMBER_ID = 'user01'
+AND MEMBER_PW = 'pass01!'
+AND STATUS_CD != 101;
+
+
+-- 정지 회원 샘플데이터
+INSERT INTO MEMBER
+VALUES(SEQ_MEMBER_NO.NEXTVAL, 'user02', 'pass02!', '유저이',
+       '010-1234-1234', 'user02@kh.or.kr', 
+       '서울시 중구 남대문로 120 대일빌딩 2층 KH정보교육원',
+       DEFAULT, 102, 200);
+
+COMMIT;
+
+
+-- MEMBER_PW 컬럼 크기 변경
+ALTER TABLE MEMBER MODIFY MEMBER_PW VARCHAR2(100);
+
+-- user01 비밀번호 변경
+UPDATE MEMBER SET
+MEMBER_PW = 'aBN5hiegXlvAovJLipPoPd5LB+xjPrAeu1tcAVg0p5MKGocvo6l825SD+ZMCOcHBFeGB7MnzH31SAnDzYYsSdg=='
+WHERE MEMBER_ID = 'user01';
+
+COMMIT;
+
+
+-- STATUS_CD 기본값 지정
+ALTER TABLE MEMBER MODIFY STATUS_CD DEFAULT 100;
+
+-- GRADE_CD 기본값 지정
+ALTER TABLE MEMBER MODIFY GRADE_CD DEFAULT 200;
+
+
+
+-- 아이디 중복 검사
+-- (탈퇴 회원 제외, 아이디가 일치하는 회원만 조회)
+SELECT COUNT(*) FROM MEMBER
+WHERE STATUS_CD != 101
+AND MEMBER_ID = 'user200'  ;
+
+-- 결과 1 == 중복 O
+-- 결과 0 == 중복 X
+
+
+-- 아이디로 회원 정보 검색(idSearch)
+SELECT MEMBER_NM, MEMBER_PHONE, MEMBER_EMAIL, MEMBER_ADDR
+FROM MEMBER
+WHERE MEMBER_ID = 'user01'
+AND STATUS_CD != 101
+AND GRADE_CD = 200
+;
+
+
+COMMIT;
+
+UPDATE MEMBER SET
+		STATUS_CD = (SELECT STATUS_CD FROM MEMBER_STATUS WHERE STATUS_NM = '탈퇴')
+		WHERE MEMBER_NO = '1' ;
+		--AND MEMBER_PW = ?;
+        
+ROLLBACK;
+
+
+
+
+---------------------------------------------------------------------------------------
+-- CATEGORY 샘플 데이터
+INSERT INTO CATEGORY VALUES(1, '잡담');
+INSERT INTO CATEGORY VALUES(2, '질문');
+INSERT INTO CATEGORY VALUES(3, '정보');
+
+SELECT * FROM CATEGORY;
+COMMIT;
+
+
+-- BOARD_STATUS 샘플 데이터 추가
+INSERT INTO BOARD_STATUS VALUES(300, '정상');
+INSERT INTO BOARD_STATUS VALUES(301, '블라인드');
+INSERT INTO BOARD_STATUS VALUES(302, '삭제');
+
+SELECT * FROM BOARD_STATUS;
+COMMIT;
+
+
+-- BOARD 샘플 데이터 추가 (500개)
+BEGIN
+    FOR I IN 1..500 LOOP
+        INSERT INTO BOARD
+        VALUES(SEQ_BOARD_NO.NEXTVAL,
+                SEQ_BOARD_NO.CURRVAL || '번째 게시글',
+                SEQ_BOARD_NO.CURRVAL || '번째 게시글 입니다.',
+                DEFAULT, DEFAULT, DEFAULT,
+                43, 300, FLOOR(DBMS_RANDOM.VALUE(1,4)));
+    END LOOP;
+END;
+/
+
+SELECT COUNT(*) FROM BOARD; -- 500개 삽입 확인
+COMMIT;
+
+
+-- 게시글 상태가 섞여 있는 게시글 100개 생성
+BEGIN
+    FOR I IN 1..100 LOOP
+        INSERT INTO BOARD
+        VALUES(SEQ_BOARD_NO.NEXTVAL,
+                SEQ_BOARD_NO.CURRVAL || '번째 게시글',
+                SEQ_BOARD_NO.CURRVAL || '번째 게시글 입니다.',
+                DEFAULT, DEFAULT, DEFAULT,
+                43, 300 +  FLOOR(DBMS_RANDOM.VALUE(0,3)) 
+                , FLOOR(DBMS_RANDOM.VALUE(1,4)) );
+    END LOOP;
+END;
+/
+
+COMMIT;
+
+SELECT * FROM BOARD
+ORDER BY BOARD_NO DESC;
+
+
+-- 게시글 목록 조회
+-- 글번호, 제목, 작성자, 조회수, 작성일, 카테고리, 상태명
+        -- CREATE_DT, 
+        -- 게시글 작성 시간으로 부터 1일이 지나지 않은 경우 -> 16:12 시간 작성
+        -- 게시글 작성 시간으로 부터 1일이 지난 경우        -> 2021-12-12 날짜 작성  
+       
+       
+SELECT BOARD_NO, BOARD_TITLE, MEMBER_NO, MEMBER_NM,READ_COUNT, 
+        CASE WHEN SYSDATE - CREATE_DT < 1
+             THEN TO_CHAR(  CREATE_DT, 'HH24:MI'  )  
+             ELSE TO_CHAR(  CREATE_DT, 'YYYY-MM-DD'  )  
+        END AS "CREATE_DT",
+       CATEGORY_CD, CATEGORY_NM,
+       BOARD_STATUS_CD, BOARD_STATUS_NM  
+FROM BOARD
+JOIN MEMBER USING(MEMBER_NO)
+JOIN CATEGORY USING(CATEGORY_CD)
+JOIN BOARD_STATUS USING(BOARD_STATUS_CD);
+
+
+-- 게시글 목록 조회용 VIEW 생성
+CREATE OR REPLACE VIEW BOARD_LIST AS
+SELECT BOARD_NO, BOARD_TITLE, MEMBER_NO, MEMBER_NM,READ_COUNT, 
+        CASE WHEN SYSDATE - CREATE_DT < 1
+             THEN TO_CHAR(  CREATE_DT, 'HH24:MI'  )  
+             ELSE TO_CHAR(  CREATE_DT, 'YYYY-MM-DD'  )  
+        END AS "CREATE_DT",
+       CATEGORY_CD, CATEGORY_NM,
+       BOARD_STATUS_CD, BOARD_STATUS_NM  
+FROM BOARD
+JOIN MEMBER USING(MEMBER_NO)
+JOIN CATEGORY USING(CATEGORY_CD)
+JOIN BOARD_STATUS USING(BOARD_STATUS_CD);
+
+
+-- 게시글 목록 조회 시 필요한 조건, 정렬
+-- 정상,블라인드만 조회
+
+
+SELECT * FROM
+(SELECT ROWNUM RNUM, A.* 
+    FROM (SELECT * FROM BOARD_LIST
+        WHERE BOARD_STATUS_CD != 302
+        ORDER BY BOARD_NO DESC) A)
+WHERE RNUM BETWEEN 21 AND 30;
+
+--> ROWNUM은 행의 번호를 1부터 세어주는 가상 컬럼 (반드시 1부터 시작)
+
+
+
+-- 게시글 상세 조회
+
+-- 작성자에게만 수정,삭제 버튼을 노출시켜야 하므로 
+-- MEMBER_NO를 받아와서 조건에 사용해야한다.
+-- 오라클 DB에서 ""는 눈에 보이는 문자열 그대로를 인식한다.
+
+SELECT BOARD_NO, BOARD_TITLE, BOARD_CONTENT,
+    MEMBER_NO, MEMBER_NM,
+    TO_CHAR(CREATE_DT, 'YYYY"년" MM"월" DD"일" HH24"시" MI"분" SS"초"') CREATE_DT,
+    TO_CHAR(MODIFY_DT, 'YYYY"년" MM"월" DD"일" HH24"시" MI"분" SS"초"') MODIFY_DT,
+    CATEGORY_CD, CATEGORY_NM,
+    READ_COUNT, BOARD_STATUS_NM
+FROM BOARD
+JOIN MEMBER USING(MEMBER_NO)
+JOIN CATEGORY USING(CATEGORY_CD)
+JOIN BOARD_STATUS USING(BOARD_STATUS_CD)
+WHERE BOARD_NO = 580
+AND BOARD_STATUS_CD != 302;
+
+
+-- 마지막 수정일 확인하기
+UPDATE BOARD SET
+MODIFY_DT = SYSDATE
+WHERE BOARD_NO = 620;
+
+COMMIT;
+
+
+
+
+
+
+
+
+
+
+
+

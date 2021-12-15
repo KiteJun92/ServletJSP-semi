@@ -28,12 +28,8 @@ public class BoardService {
 		
 		return new Pagination(listCount,cp);
 	}
-	/** 게시글 목록 조회
-	 * @param pagination
-	 * @return boardList
-	 * @throws Exception
-	 */
 
+	
 	/** 게시글 목록 조회
 	 * @param pagination
 	 * @return boardList;
@@ -42,9 +38,40 @@ public class BoardService {
 	public List<Board> selectBoardList(Pagination pagination)throws Exception {
 		Connection conn = getConnection();
 		List<Board> boardList = dao.selectBoardList(pagination , conn);
-		
 		close(conn);
 		return boardList;
+	}
+
+	
+	/** 게시글 상세 조회 Service
+	 * @param boardNo
+	 * @param memberNo 
+	 * @return board (없으면 null)
+	 * @throws Exception
+	 */
+	public Board selectBoardList(int boardNo, int memberNo) throws Exception{
+
+		Connection conn = getConnection();
+		Board board = dao.selectBoard(boardNo, conn);
+		
+		// 조회된 게시글이 있고, 해당 게시글의 작성자와 로그인된 회원이 같지 않으면
+		// 조회수를 증가시킨다.
+		if(board != null && board.getMemberNo() != memberNo) {
+			
+			int result = dao.increaseReadCount(boardNo, conn);
+			
+			if(result > 0) {
+				commit(conn);
+				
+				// 먼저 조회되었던 게시글 정보에서 조회수를 1 증가
+				board.setReadCount( board.getReadCount() + 1 );
+			}
+			else rollback(conn);
+			
+		}
+		
+		close(conn);
+		return board;
 	}
 
 	

@@ -30,6 +30,7 @@ public class BoardDAO {
 		}
 	}
 
+	
 	/**게시글 수조회
 	 * @param conn
 	 * @return	listCount
@@ -44,8 +45,6 @@ public class BoardDAO {
 				rs = pstmt.executeQuery();
 				if(rs.next()) {
 					listCount = rs.getInt(1);
-					
-					
 				}
 				
 			}finally {
@@ -55,7 +54,6 @@ public class BoardDAO {
 			}
 		return listCount;
 	}
-
 
 
 	/** 게시글 목록 조회
@@ -76,6 +74,7 @@ public class BoardDAO {
 			rs = pstmt.executeQuery();
 		
 			while(rs.next()) {
+				
 				Board board = new Board();
 				// 게시글 번호 , 제목 , 작성자명 , 조회수 , 카테고리명 , 작성일 ,게시글 상태명
 				
@@ -94,10 +93,75 @@ public class BoardDAO {
 		}finally {
 			close(rs);
 			close(pstmt);
-		
-			
 		}
+		
 		return boardList;
+	}
+
+	/** 게시글 상세 조회 DAO
+	 * @param board
+	 * @param conn
+	 * @return board (없으면 null)
+	 * @throws Exception
+	 */
+	public Board selectBoard(int boardNo, Connection conn) throws Exception{
+
+		Board board = null;
+		
+		try {
+			
+			String sql = prop.getProperty("selectBoard");
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, boardNo);
+			
+			rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				board = new Board();
+				
+				board.setBoardNo(rs.getInt("BOARD_NO"));
+				board.setBoardTitle(rs.getString("BOARD_TITLE"));
+				board.setBoardContent(rs.getString("BOARD_CONTENT"));
+				board.setMemberNo(rs.getInt("MEMBER_NO"));
+				board.setMemberName(rs.getString("MEMBER_NM"));
+				board.setCreateDate(rs.getString("CREATE_DT"));
+				board.setModifyDate(rs.getString("MODIFY_DT"));
+				board.setCategoryCode(rs.getInt("CATEGORY_CD"));
+				board.setCategoryName(rs.getString("CATEGORY_NM"));
+				board.setReadCount(rs.getInt("READ_COUNT"));
+				board.setBoardStatusName(rs.getString("BOARD_STATUS_NM"));
+
+			}
+			
+		}finally {
+			close(rs);
+			close(pstmt);
+		}
+		
+		return board;
+	}
+
+
+	/** 조회수 증가
+	 * @param boardNo
+	 * @param conn 
+	 * @return result(1성공 0실패)
+	 * @throws Exception
+	 */
+	public int increaseReadCount(int boardNo, Connection conn) throws Exception{
+		
+		int result = 0;
+		
+		try {
+			String sql = prop.getProperty("increaseReadCount");
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, boardNo);
+			result = pstmt.executeUpdate();
+		}finally {
+			close(pstmt);
+		}
+		
+		return result;
 	}
 
 	

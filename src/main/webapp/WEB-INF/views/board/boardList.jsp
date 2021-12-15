@@ -41,21 +41,23 @@
 					<td>${board.categoryName}</td>
 					<%-- 글제목 --%>
 					<td class="boardTitle">
-					<a href="#">
-					<c:choose>
 					
-					<c:when test="${board.boardStatusName =='블라인드'}">
-						<strong style=" color: red; font-size:11px">
-						관리자에 의해 블라인드 처리된 게시글입니다.
-						</strong>
-					</c:when>
-					
-					<c:otherwise>
-					
-					${board.boardTitle}
-					</c:otherwise>
-					</c:choose>
-					</a>
+						<%-- <a href="${contextPath}/board/view"> --%>
+						<a href="view?no=${board.boardNo}&cp=${pagination.currentPage}">
+							<c:choose>
+							
+								<c:when test="${board.boardStatusName =='블라인드'}">
+									<strong style=" color: red; font-size:11px">
+										관리자에 의해 블라인드 처리된 게시글입니다.
+									</strong>
+								</c:when>
+							
+								<c:otherwise>
+									${board.boardTitle}
+								</c:otherwise>
+								
+							</c:choose>
+						</a>
 					</td>
 					
 					<%-- 작성자 --%>
