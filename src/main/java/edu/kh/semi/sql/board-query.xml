@@ -44,4 +44,9 @@
 	</entry>
 
 
+	<!-- 카테고리 조회 -->	
+	<entry key="selectCategory">
+		SELECT * FROM CATEGORY
+	</entry>
+
 </properties>

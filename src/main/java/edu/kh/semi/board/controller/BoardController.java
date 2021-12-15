@@ -1,6 +1,7 @@
 package edu.kh.semi.board.controller;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.servlet.RequestDispatcher;
@@ -9,10 +10,15 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.oreilly.servlet.MultipartRequest;
 
 import edu.kh.semi.board.model.service.BoardService;
 import edu.kh.semi.board.model.vo.Board;
+import edu.kh.semi.board.model.vo.Category;
 import edu.kh.semi.board.model.vo.Pagination;
+import edu.kh.semi.common.MyRenamePolicy;
 import edu.kh.semi.member.model.vo.Member;
 
 	// /board/ 로 시작하는 모든 요청을 처리하는 컨트롤러 
@@ -26,10 +32,15 @@ import edu.kh.semi.member.model.vo.Member;
 
 @WebServlet("/board/*")
 public class BoardController extends HttpServlet {
+	
+	
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		
+		
 		//데이터 전달 방식 저장용 변수
 		String method = req.getMethod();
+		
 		
 		// 요청 주소 뒷 부분을 잘라내어 구분 방법 만들기
 		String uri = req.getRequestURI();
@@ -115,6 +126,124 @@ public class BoardController extends HttpServlet {
 					// 상대 경로 : // /semi/board/view -> /semi/board/list
 					resp.sendRedirect("list");
 				}
+				
+				
+			}
+			
+			
+			// 게시글 등록
+			else if(command.equals("insert")) {
+				
+				// GET 방식 요청 -> 게시글 등록 화면 전환
+				if(method.equals("GET")) {
+				
+					// 카테고리 내용 조회하기
+					List<Category> category = service.selectCategory();
+					
+					req.setAttribute("category", category);
+					
+					path = "/WEB-INF/views/board/boardInsert.jsp";
+					dispatcher = req.getRequestDispatcher(path);
+					dispatcher.forward(req, resp);
+					
+				}else {		// POST 방식 요청 -> 게시글 등록 서비스 수행 (insert로 요청이 왔지만 요청 방식이 다르므로 중복 사용 가능)
+					
+					// ************* 주의 ****************
+					// encType="multipart/form-data" 형식의 form 태그에서 
+					// 전달된 Parameter는 HttpServletRequest 객체로는 다룰 수 없음!
+					// -> cos.jar에서 제공하는 MultipartRequest를 사용해야 한다.
+					// System.out.println( req.getParameter("boardTitle"));		// null 나옴
+					// System.out.println( req.getParameter("boardContent"));	// null 나옴
+					
+					
+					// ***** MultipartRequest 사용을 위한 준비 *****
+					
+					// 1. 업로드 되는 파일 전체 용량의 합 지정 (byte 단위)
+					int maxSize = 1024 * 1024 * 100;	// 100MB
+					
+					// 2. 업로드 되는 파일을 서버 컴퓨터 어디에 저장할지 경로 지정
+					// -> 특정 폴더의 컴퓨터 내부 절대 경로
+					
+					HttpSession session = req.getSession();
+					
+					// 프로젝트의 wepapp폴더의 컴퓨터 내부 절대 경로
+					String root = session.getServletContext().getRealPath("/");
+					
+					// 나머지 경로 (DB에 저장하여 주소 경로로 사용할 예정)
+					String filePath = "/resources/images/board/";
+					
+					// 실제 경로
+					String realPath = root + filePath;
+					
+					
+					// 3. 저장되는 파일의 이름을 변경
+					// -> 중복되는 파일명을 방지하기 위해서
+					// --> common -> myRenamePolicy 클래스
+					
+					// *********************************************************
+					// MultipartRequest 객체 생성
+					
+					MultipartRequest mReq 
+						= new MultipartRequest(req, realPath, maxSize, "UTF-8", new MyRenamePolicy());
+					
+					// MultipartRequest 객체가 성공적으로 생성된 경우
+					// 지정된 파일 경로에 파일이 바로 업로드 된다!!
+					
+					// 만약 객체는 생성되었지만 파일 저장이 안되는 경우
+					// Servers 탭 -> 사용하는 서버 더블클릭 -> Overview 
+					// ->Server Options 메뉴 -> Serve modules without publishing
+					
+					
+					// ********** MultipartRequest 다루기
+					
+					// 1) 텍스트 형식의 파라미터
+//					System.out.println( mReq.getParameter("boardContent"));	
+					String boardTitle = mReq.getParameter("boardTitle");
+					String boardContent = mReq.getParameter("boardContent");
+					int categoryCode = Integer.parseInt(mReq.getParameter("categoryCode"));
+					
+					// 로그인한 회원 번호
+					int memberNo = (int)((Member)session.getAttribute("loginMember")).getMemberNo();
+					
+					Board board = new Board();
+					board.setBoardTitle(boardTitle);
+					board.setBoardContent(boardContent);
+					board.setCategoryCode(categoryCode);
+					board.setMemberNo(memberNo);
+					
+					
+					// 2) 파일 형식의 파라미터
+					
+					Enumeration<String> files = mReq.getFileNames();
+					// Enumeration == iterator (ResultSet과 비슷)
+					// -> 폼에서 전달된 모든 input type="file" 요소의 name 속성을 반환
+					// --> 파일이 업로드 되지 않아도 모든 요소를 얻어온다.
+					
+					while(files.hasMoreElements()) {
+						// 다음 요소(name)가 있으면  true
+						
+						String name = files.nextElement();	// 다음 요소 값 얻어오기
+						
+						System.out.println("얻어온 name : " + name);
+						System.out.println("변환된 파일명 : " + mReq.getFilesystemName(name));
+						System.out.println("원본 파일명 : " + mReq.getOriginalFileName(name));
+						
+						
+						// 현재 요소에 업로드된 파일이 있는 경우
+						if(mReq.getFilesystemName(name) != null) {
+							
+						}
+						
+						
+						
+					}
+					
+					
+					
+					
+					
+				}
+				
 				
 				
 			}

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Properties;
 
 import edu.kh.semi.board.model.vo.Board;
+import edu.kh.semi.board.model.vo.Category;
 import edu.kh.semi.board.model.vo.Pagination;
 public class BoardDAO {
 	private Statement stmt;
@@ -162,6 +163,40 @@ public class BoardDAO {
 		}
 		
 		return result;
+	}
+
+
+	/** 카테고리 조회 DAO
+	 * @param conn
+	 * @return category
+	 * @throws Exception
+	 */
+	public List<Category> selectCategory(Connection conn) throws Exception{
+		
+		List<Category> category = new ArrayList<Category>();
+		
+		try {
+			
+			String sql = prop.getProperty("selectCategory");
+			stmt = conn.createStatement();
+			rs = stmt.executeQuery(sql);
+			
+			while(rs.next()) {
+				
+				Category c = new Category();
+				c.setCategoryCode(rs.getInt(1));
+				c.setCategoryName(rs.getString(2));
+				
+				category.add(c);
+				
+			}
+			
+		}finally {
+			close(rs);
+			close(stmt);
+		}
+		
+		return category;
 	}
 
 	

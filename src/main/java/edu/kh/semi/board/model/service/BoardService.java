@@ -6,6 +6,7 @@ import java.util.List;
 
 import edu.kh.semi.board.model.dao.BoardDAO;
 import edu.kh.semi.board.model.vo.Board;
+import edu.kh.semi.board.model.vo.Category;
 import edu.kh.semi.board.model.vo.Pagination;
 public class BoardService {
 	private BoardDAO dao = new BoardDAO();
@@ -72,6 +73,19 @@ public class BoardService {
 		
 		close(conn);
 		return board;
+	}
+
+
+	/** 카테고리 조회 Service
+	 * @return category
+	 * @throws Exception
+	 */
+	public List<Category> selectCategory() throws Exception{
+		
+		Connection conn = getConnection();
+		List<Category> category = dao.selectCategory(conn);
+		close(conn);
+		return category;
 	}
 
 	
