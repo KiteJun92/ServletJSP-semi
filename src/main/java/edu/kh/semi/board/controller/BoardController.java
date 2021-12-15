@@ -44,13 +44,18 @@ public class BoardController extends HttpServlet {
 		
 		// 요청 주소 뒷 부분을 잘라내어 구분 방법 만들기
 		String uri = req.getRequestURI();
+		
 		String contextPath = req.getContextPath();
+		
 		String command = uri.substring( (contextPath + "/board/").length());
 		// -> 요청 주소에서 /semi/board/ 의 길이만큼 잘라낸 후
 		// 	  나머지 문자열을 command 변수에 저장
+		
 		String path = null;
 		RequestDispatcher dispatcher = null;
 		String message = null;
+		
+		
 		try {
 			// command에 저장된 값에 따라 서로 다른 동작을 수행
 			BoardService service =new BoardService();
