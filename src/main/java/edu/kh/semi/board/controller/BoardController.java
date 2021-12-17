@@ -20,10 +20,12 @@ import javax.servlet.http.HttpSession;
 import com.oreilly.servlet.MultipartRequest;
 
 import edu.kh.semi.board.model.service.BoardService;
+import edu.kh.semi.board.model.service.ReplyService;
 import edu.kh.semi.board.model.vo.Board;
 import edu.kh.semi.board.model.vo.BoardImage;
 import edu.kh.semi.board.model.vo.Category;
 import edu.kh.semi.board.model.vo.Pagination;
+import edu.kh.semi.board.model.vo.Reply;
 import edu.kh.semi.common.MyRenamePolicy;
 import edu.kh.semi.member.model.vo.Member;
 
@@ -106,7 +108,13 @@ public class BoardController extends HttpServlet {
 				Board board = service.selectBoard(boardNo , memberNo);
 				if(board !=  null) { //조회 성공
 					
+					// + 댓글 목록 조회하기
+					List<Reply> rList = new ReplyService().selectReplyList(boardNo);
+					
+					req.setAttribute("rList", rList);
+					
 					req.setAttribute("board", board);
+					
 					path = "/WEB-INF/views/board/boardView.jsp";
 					dispatcher = req.getRequestDispatcher(path);
 					dispatcher.forward(req, resp);

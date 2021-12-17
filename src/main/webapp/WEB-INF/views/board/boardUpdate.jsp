@@ -138,7 +138,7 @@
 
 				<div class="text-center">
 					<button type="submit" class="btn btn-primary">수정</button>
-					<button type="button" class="btn btn-primary">목록으로</button>
+					<button type="button" class="btn btn-primary" onclick='location.href="list?cp=${param.cp}"'>목록으로</button>
 				</div>
 				
 				
